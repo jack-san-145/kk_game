@@ -237,11 +237,7 @@ function checkAnswer(scene) {
         setTimeout(() => startRunning(),100);
          
         // Disable the box's collision so the player can pass
-        // box.destroy();
-        if (playerBoxCollider) {
-            scene.physics.world.removeCollider(playerBoxCollider);
-            playerBoxCollider = null; // Avoid multiple removals
-        }
+        box.destroy();
     }
     inputField.value = '';
 }
