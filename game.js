@@ -13,6 +13,7 @@ const config = {
         preload: preload,
         create: create,
         update: update
+
     }
 };
 
@@ -20,6 +21,7 @@ const game = new Phaser.Game(config);
 
 let player;
 let box; // The obstacle (box)
+let playerBoxCollider;
 let isMoving = true;
 let questionOverlay;
 let questionText;
@@ -29,13 +31,13 @@ let correctAnswer = "4";
 let cursors;
 
 function preload() {
-    this.load.image('sky', 'tileset.png');
-    this.load.image('box', 'Crate.png'); // Load the box image
-    this.load.image('drygrass', 'DryGrass.png');
-    this.load.image('LCactus', 'LargeCactus.png');
-    this.load.image('Direction', 'SignArrow.png');
+    this.load.image('sky', 'learning-game/assets/tileset.png');
+    this.load.image('box', 'learning-game/assets/Crate.png'); // Load the box image
+    this.load.image('drygrass', 'learning-game/assets/DryGrass.png');
+    this.load.image('LCactus', 'learning-game/assets/LargeCactus.png');
+    this.load.image('Direction', 'learning-game/assets/SignArrow.png');
     this.load.spritesheet('dude', 
-        'dude.png',
+        'learning-game/assets/dude.png',
         { frameWidth: 32, frameHeight: 48 }
     );
 }
@@ -94,8 +96,9 @@ function create() {
     this.physics.add.collider(player, ground);
 
     // Create the box obstacle
-    box = this.physics.add.staticSprite(700, this.sys.game.config.height - 140, 'box').setScale(2.1);
-    this.physics.add.collider(player, box, hitBox, null, this);
+    box = this.physics.add.staticSprite(700, this.sys.game.config.height - 110, 'box').setScale(1.5);
+
+    playerBoxCollider = this.physics.add.collider(player, box, hitBox, null, this);
 
     // Input events
     cursors = this.input.keyboard.createCursorKeys();
@@ -115,11 +118,22 @@ function create() {
         }
     });
 }
-
-function update() {
-    if (isMoving) {
+function update() 
+{
+    if (cursors.left.isDown) {
+        player.setVelocityX(-160);
+        player.anims.play('left', true);
+    }
+    if (cursors.right.isDown) {
         player.setVelocityX(160);
         player.anims.play('right', true);
+    } else {
+        player.setVelocityX(0);
+        player.anims.play('turn');
+    }
+
+    if (cursors.up.isDown && player.body.touching.down) {
+        player.setVelocityY(-200);
     }
 }
 
@@ -160,7 +174,7 @@ function createQuestionOverlay(scene) {
     overlay.style.justifyContent = 'center';
     overlay.style.alignItems = 'center';
     overlayContainer.appendChild(overlay);
-
+    
     // Add the question text
     const question = document.createElement('div');
     question.innerText = 'What is 2 + 2?';
@@ -191,7 +205,13 @@ function createQuestionOverlay(scene) {
     questionOverlay = overlayContainer;
 
     // Add event listener for the submit button
-    submitButton.addEventListener('click', checkAnswer);
+    submitButton.addEventListener('click', checkAnswer(this));
+    document.addEventListener('keydown',(event)=>{
+        if(event.key=="Enter")
+        {
+            checkAnswer(this);
+        }
+    });
 }
 
 function showQuestion() {
@@ -203,7 +223,7 @@ function showQuestion() {
     questionOverlay.style.display = 'flex';
 }
 
-function checkAnswer() {
+function checkAnswer(scene) {
     if (inputField.value === correctAnswer) {
         // Remove blur from the game canvas
         const canvas = document.querySelector('canvas');
@@ -214,10 +234,14 @@ function checkAnswer() {
 
         // Make the player jump and resume running
         player.setVelocityY(-200);
-        setTimeout(() => startRunning(), 1000);
-
+        setTimeout(() => startRunning(),100);
+         
         // Disable the box's collision so the player can pass
-        box.destroy();
+        // box.destroy();
+        if (playerBoxCollider) {
+            scene.physics.world.removeCollider(playerBoxCollider);
+            playerBoxCollider = null; // Avoid multiple removals
+        }
     }
     inputField.value = '';
 }
